@@ -41,28 +41,44 @@ def Open_File(file_name):
 while True:
     connection, address = c.accept()
     req = connection.recv(1024).decode('utf-8')
+#    print(req)
     string_list = req.split(' ')  # Split request from spaces
+
     method = string_list[0]  # First string is a method
     requesting_file = string_list[1]  # Second string is request file
 #    print(method)
 
-    print('Client request ', requesting_file)
+#    print('Client request ', requesting_file)
 
     myfile = requesting_file.split('?')[0]  # After the "?" symbol not relevent here
     myfile = requesting_file.lstrip('/')
 #    print(myfile)
-    print(requesting_file)
-#    if (method == "GET"):
-#        if(requesting_file == "http://www.example.com")
+#    print(requesting_file)
 
     if (myfile == ''):
         myfile = 'form2.html'  # Load index file as default
 
+    if(myfile.find("?") == 0):
+        check_split = myfile.split('=')
+        password = check_split[2]
+        check_split = check_split[1].split('&')
+        username = check_split[0]
+        if(username == "admin" and password == "admin"):
+            myfile = 'profile.html'
+        print(username)
+        print(password)
+
+    if(myfile.find("down") == 0):
+        myfile = myfile.split('?')[0]
+
     print(myfile)
+
+
 
     final_response = Open_File(myfile)
 #    print(final_response)
     connection.send(final_response)
+
 
 
     connection.close()
