@@ -10,7 +10,7 @@ c.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 c.bind((host, port))
 
-c.listen(2)
+c.listen(1)
 
 def Open_File(file_name):
     try:
@@ -30,55 +30,61 @@ def Open_File(file_name):
         header += 'Content-Type: ' + str(mimetype) + '\n\n'
 
     except Exception as e:
-        header = 'HTTP/1.1 404 Not Found\n\n'
-        response = '<html><body><center><h3>Error 404: File not found</h3><p>Python HTTP Server</p></center></body></html>'.encode('utf-8')
+        file = open('404notfound.html', 'rb')  # open file , r => read , b => byte format
+        response = file.read()
+        file.close()
+
+        header = 'HTTP/1.1 200 OK\n'
+        mimetype = 'text/html'
+        header += 'Content-Type: ' + str(mimetype) + '\n\n'
 
     final_response = header.encode('utf-8')
     final_response += response
     return final_response
 
 
+
 while True:
     connection, address = c.accept()
     req = connection.recv(1024).decode('utf-8')
-#    print(req)
     string_list = req.split(' ')  # Split request from spaces
 
     method = string_list[0]  # First string is a method
     requesting_file = string_list[1]  # Second string is request file
-#    print(method)
 
-#    print('Client request ', requesting_file)
+    login_info = ''
+    if(method == "POST"):
+        login_info = string_list[-1]
 
     myfile = requesting_file.split('?')[0]  # After the "?" symbol not relevent here
-    myfile = requesting_file.lstrip('/')
-#    print(myfile)
-#    print(requesting_file)
+    myfile = requesting_file.lstrip('/')    # Remove "/"
 
     if (myfile == ''):
-        myfile = 'form2.html'  # Load index file as default
+        myfile = 'index.html'  # Load index file as default
 
-    if(myfile.find("?") == 0):
-        check_split = myfile.split('=')
-        password = check_split[2]
+    # Check in formation when login
+    if(login_info.find("username") == 39):
+        # Slip username and password
+        check_split = login_info.split('\r')
+        check_split = check_split[-1]
+        check_split = check_split.split('=')
+        password = check_split[-1]
         check_split = check_split[1].split('&')
         username = check_split[0]
-        if(username == "admin" and password == "admin"):
-            myfile = 'profile.html'
-        print(username)
-        print(password)
 
-    if(myfile.find("down") == 0):
+        # Check whether login is right
+        if(username == "admin" and password == "admin"):
+            myfile = 'info.html'
+        else:
+            myfile = '404notfound.html'
+
+#        print(username)
+#        print(password)
+
+    # Check whether having download files request?
+    if(myfile.find("files") == 0):
         myfile = myfile.split('?')[0]
 
-    print(myfile)
-
-
-
     final_response = Open_File(myfile)
-#    print(final_response)
     connection.send(final_response)
-
-
-
     connection.close()
