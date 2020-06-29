@@ -10,4 +10,5 @@ Just let me know
 #Cập nhật 29/06/2020
 - Tự động xuất file files.html dựa trên thông tin dữ liệu ở folder data trên máy
 - Tự động lấy địa chỉ IP hiện tại của máy
+- Mà do ip tự động quá chậm nên đổi lại thành local host rồi
 
