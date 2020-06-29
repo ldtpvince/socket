@@ -3,8 +3,8 @@ import os
 import time
 import math
 
-hostname = socket.gethostname()
-host = socket.gethostbyname(hostname)
+
+host = '127.0.0.1'
 print("Server dang duoc chay o IP: " + str(host) + ", port: 8080")
 port = 8080
 
