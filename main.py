@@ -1,5 +1,7 @@
 import socket
-
+import os
+import time
+import math
 
 host = '127.0.0.1'
 port = 8080
@@ -18,28 +20,76 @@ def procFile(fileName):
     file.close()
     return data, fileName.split('.')[1]
 
+def responseGET(path):
+    if (path == '/'):
+        data, fileType = procFile("index.html")
+
+    elif (path.find('.') == -1 or path == "/files.html?"):
+        if (path == "/files.html?"):
+            path = "/data"
+        files = [f for f in os.listdir(path[1:])]
+
+        data, fileType = procFile("files.html")
+        
+        for file in files:
+            filePath = path[1:] + '/' + file
+            timeStr = time.ctime(os.path.getatime(filePath))
+            size = os.path.getsize(filePath)
+            index = data.find(b"</pre>\r\n    <hr>")
+
+            for i in range(35 - len(file)):
+                timeStr = " " + timeStr
+            
+            if (size == 0):
+                sizeStr = "&lt;dir&gt"
+            else:
+                digitNum = math.floor(math.log10(size))
+                if (digitNum < 3):
+                    digitNum = 0
+                    sizeStr = "B"
+                elif (digitNum < 6):
+                    digitNum = 3
+                    sizeStr = "KB"
+                elif (digitNum < 9):
+                    digitNum = 6
+                    sizeStr = "MB"
+                elif (digitNum < 12):
+                    digitNum = 9
+                    sizeStr = "GB"
+                size = size / (10 ** digitNum)
+                sizeStr = "{:.1f}".format(round(size, 1)) + sizeStr
+
+            data = data[:index] + bytes("     <a href=\"" + filePath + "\">" + file + "</a>" + timeStr + "  " +  sizeStr + "\r\n    ", 'utf-8') + data[index:]
+            fileType = " "
+    else:
+        data, fileType = procFile(path[1:].split('?')[0])
+
+    return data, fileType
+
+def responsePOST(dataBody):
+    # username = "username=..." & password = "password=..."
+    username = dataBody.split('&')[0]
+    password = dataBody.split('&')[1]
+
+    if (username[9:] == "admin" and password[9:] == "admin"):
+        data, fileType = procFile("info.html")
+
+    return data, fileType
+
 def response(HTTPHeader, dataBody):
     try:
         headerStrList = HTTPHeader.split(' ')
         responsePackage = ""
     
         if (headerStrList[0] == "GET"):
-            if (headerStrList[1] == '/'):
-                data, fileType = procFile("index.html")
-            else:
-                data, fileType = procFile(headerStrList[1][1:].split('?')[0])
+            data, fileType = responseGET(headerStrList[1])
         elif (headerStrList[0] == "POST"):
-            # username = "username=..." & password = "password=..."
-            username = dataBody.split('&')[0]
-            password = dataBody.split('&')[1]
-
-            if (username[9:] == "admin" and password[9:] == "admin"):
-                data, fileType = procFile("info.html")
+            data, fileType = responsePOST(dataBody)
 
         header = "HTTP/1.1 200 OK\n"
 
-        if (fileType == "jpg"):
-            mimetype = "image/jpg"
+        if (fileType == "jpg" or fileType == "png" or fileType == "jpeg"):
+            mimetype = "image/" + fileType
         elif (fileType == "css"):
             mimetype = "text/css"
         else:
@@ -50,6 +100,7 @@ def response(HTTPHeader, dataBody):
         responsePackage += data
 
     except Exception as e:
+        print(e)
         header = "HTTP/1.1 404 Not found\n\n"
         data = procFile("404notfound.html")[0]
         responsePackage = header.encode('utf-8') + data
@@ -65,6 +116,9 @@ def connectionLoop():
 
         HTTPHeader = HTTPRequestLines[0]
         dataBody = HTTPRequestLines[-1]
+
+        # print(HTTPHeader)
+        # print(dataBody)
 
         responsePackage = response(HTTPHeader, dataBody)
         connection.send(responsePackage)
