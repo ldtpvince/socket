@@ -119,9 +119,6 @@ def connectionLoop():
         HTTPHeader = HTTPRequestLines[0]
         dataBody = HTTPRequestLines[-1]
 
-        # print(HTTPHeader)
-        # print(dataBody)
-
         responsePackage = response(HTTPHeader, dataBody)
         connection.send(responsePackage)
 
